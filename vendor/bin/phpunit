@@ -1,0 +1,86 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$root = \dirname(__DIR__, 2);
+require $root . '/tests/bootstrap.php';
+
+$testDir = $root . '/tests';
+$iterator = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($testDir, RecursiveDirectoryIterator::SKIP_DOTS)
+);
+
+$testFiles = [];
+foreach ($iterator as $file) {
+    if ('php' !== strtolower($file->getExtension())) {
+        continue;
+    }
+    if (!preg_match('/Test\\.php$/', $file->getFilename())) {
+        continue;
+    }
+    $testFiles[] = $file->getPathname();
+}
+
+sort($testFiles);
+
+foreach ($testFiles as $file) {
+    require_once $file;
+}
+
+$declared = get_declared_classes();
+$testClasses = array_filter($declared, static function (string $class): bool {
+    return is_subclass_of($class, PHPUnit\Framework\TestCase::class);
+});
+
+sort($testClasses);
+
+$totalTests   = 0;
+$totalPassed  = 0;
+$totalFailures = 0;
+$totalErrors   = 0;
+$failureOutput = [];
+$outputLine    = '';
+
+foreach ($testClasses as $class) {
+    /** @var PHPUnit\Framework\TestCase $instance */
+    $instance = new $class();
+    $result   = $instance->run();
+
+    foreach ($result['details'] as $detail) {
+        if ('passed' === $detail['status']) {
+            $outputLine .= '.';
+        } elseif ('failure' === $detail['status']) {
+            $outputLine .= 'F';
+            $failureOutput[] = sprintf("%s::%s\n%s\n", $result['class'], $detail['test'], $detail['message']);
+        } else {
+            $outputLine .= 'E';
+            $failureOutput[] = sprintf("%s::%s\n%s\n", $result['class'], $detail['test'], $detail['message']);
+        }
+    }
+
+    $totalTests   += $result['count'];
+    $totalPassed  += $result['passed'];
+    $totalFailures += count($result['failures']);
+    $totalErrors   += count($result['errors']);
+}
+
+if ('' !== $outputLine) {
+    echo $outputLine, "\n\n";
+}
+
+if ($failureOutput) {
+    foreach ($failureOutput as $failure) {
+        echo $failure, "\n";
+    }
+}
+
+echo sprintf(
+    "Tests: %d, Passed: %d, Failures: %d, Errors: %d\n",
+    $totalTests,
+    $totalPassed,
+    $totalFailures,
+    $totalErrors
+);
+
+exit(($totalFailures + $totalErrors) > 0 ? 1 : 0);
