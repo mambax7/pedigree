@@ -61,16 +61,16 @@ class Tree extends \XoopsObject
         $parents = ['mother' => ['id' => 0, 'name' => ''], 'father' => ['id' => 0, 'name' => '']]; //init the
         //get the Tree Handler and retrieve parent info
         $treeHandler = XoopsModules\Pedigree\Helper::getInstance()->getHandler('Tree');
-        if (!$this->getVar('mother')) {
+        if ($this->getVar('mother') > 0) {
             $motherObj = $treeHandler->get($this->getVar('mother'));
             if ($motherObj instanceof XoopsModules\Pedigree\Tree && !$motherObj->isNew()) {
-                $parents['mother'] = ['id' => $motherObj->geVar('id'), 'name' => $motherObj->getVar('pname')];
+                $parents['mother'] = ['id' => $motherObj->getVar('id'), 'name' => $motherObj->getVar('pname')];
             }
         }
-        if (!$this->getVar('father')) {
+        if ($this->getVar('father') > 0) {
             $fatherObj = $treeHandler->get($this->getVar('father'));
             if ($fatherObj instanceof XoopsModules\Pedigree\Tree && !$fatherObj->isNew()) {
-                $parents['father'] = ['id' => $fatherObj->geVar('id'), 'name' => $fatherObj->getVar('pname')];
+                $parents['father'] = ['id' => $fatherObj->getVar('id'), 'name' => $fatherObj->getVar('pname')];
             }
         }
         return $parents;

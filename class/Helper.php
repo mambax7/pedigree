@@ -28,6 +28,9 @@ class Helper extends \Xmf\Module\Helper
 {
     public $debug;
 
+    /** @var self|null */
+    protected static $helperInstance;
+
     /**
      * @param bool $debug
      */
@@ -47,12 +50,25 @@ class Helper extends \Xmf\Module\Helper
      */
     public static function getInstance($debug = false)
     {
-        static $instance;
-        if (null === $instance) {
-            $instance = new static($debug);
+        if (null === static::$helperInstance) {
+            static::$helperInstance = new static($debug);
         }
 
-        return $instance;
+        return static::$helperInstance;
+    }
+
+    /**
+     * Replace the stored helper instance
+     *
+     * Primarily intended for unit tests where we want to inject
+     * bespoke handler implementations without touching the
+     * singleton bootstrap logic used in production.
+     *
+     * @param self|null $helper
+     */
+    public static function setInstance(?self $helper = null): void
+    {
+        static::$helperInstance = $helper;
     }
 
     /**
